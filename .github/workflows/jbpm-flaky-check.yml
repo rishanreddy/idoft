@@ -22,7 +22,7 @@ jobs:
         run: |
           set -o pipefail
           cd jbpm
-          mvn clean install -DskipTests -Dmaven.javadoc.skip=true \
+          mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Denforcer.skip=true \
             -pl jbpm-case-mgmt/jbpm-case-mgmt-impl -am \
             | tee -a ../ci-build.log
 
