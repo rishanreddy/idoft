@@ -1,4 +1,4 @@
-name: jBPM Flaky Check
+name: Gora Flaky Check
 
 on:
   workflow_dispatch:
@@ -14,25 +14,32 @@ jobs:
           distribution: temurin
           java-version: '11'
 
-      - name: Clone jBPM
-        run: git clone https://github.com/kiegroup/jbpm.git
+      - name: Clone Gora
+        run: git clone https://github.com/apache/gora.git
+
+      - name: Checkout target commit
+        shell: bash
+        run: |
+          cd gora
+          git checkout 6c6b06c916b969352a6757ba7025cc78055fa87a
 
       - name: Build target module
         shell: bash
         run: |
           set -o pipefail
-          cd jbpm
-          mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Denforcer.skip=true \
-            -pl jbpm-case-mgmt/jbpm-case-mgmt-impl -am \
+          cd gora
+          mvn -DskipTests -Dmaven.javadoc.skip=true \
+            -pl gora-hive -am test-compile \
             | tee -a ../ci-build.log
 
       - name: Run test normally
         shell: bash
         run: |
           set -o pipefail
-          cd jbpm
-          mvn -pl jbpm-case-mgmt/jbpm-case-mgmt-impl test \
-            -Dtest=org.jbpm.casemgmt.impl.CaseServiceImplTest#testAddSubprocessToEmptyCase \
+          cd gora
+          mvn -pl gora-hive test \
+            -DargLine="--add-opens java.base/java.net=ALL-UNNAMED" \
+            -Dtest=org.apache.gora.hive.store.TestHiveStore#testResultSizeWithLimit \
             | tee -a ../ci-build.log
 
       - name: Run test with NonDex
@@ -41,11 +48,12 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          cd jbpm
-          mvn -pl jbpm-case-mgmt/jbpm-case-mgmt-impl \
+          cd gora
+          mvn -pl gora-hive \
             edu.illinois:nondex-maven-plugin:2.1.1:nondex \
-            -Dtest=org.jbpm.casemgmt.impl.CaseServiceImplTest#testAddSubprocessToEmptyCase \
-            -DnondexRuns=20 \
+            -DargLine="--add-opens java.base/java.net=ALL-UNNAMED" \
+            -Dtest=org.apache.gora.hive.store.TestHiveStore#testResultSizeWithLimit \
+            -DnondexRuns=10 \
             | tee -a ../ci-build.log
 
       - name: Upload ci-build.log
